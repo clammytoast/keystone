@@ -5,6 +5,8 @@ title: "[Bug] "
 labels: bug
 ---
 
+> **Do not paste real passwords, database files or key files.** Report security problems privately (see [SECURITY.md](../../SECURITY.md)), not here.
+
 **What happened?**
 
 **What did you expect to happen?**
@@ -15,10 +17,12 @@ labels: bug
 3.
 
 **Environment**
-- Keystone version:
+- Keystone version: <!-- shown in Settings, or in the installer's file name -->
 - Windows version:
+- Installed with the installer, or running the portable Keystone.exe?
 - Unlock method (master password / key file / both):
+- Where is the database? (local folder / USB drive / cloud-synced folder):
+- Database made by (Keystone / KeePass version / other app):
 
-**Screenshots (optional)**
-
-> Do not include real passwords, database files or key files.
+**Screenshots or logs (optional)**
+<!-- Cover anything private. For install problems, attach %TEMP%\Keystone-Setup.log -->

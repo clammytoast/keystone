@@ -1,0 +1,27 @@
+<!doctype html><meta charset="utf-8"><title>Keystone compatibility tests</title>
+<style>body{font:14px/1.5 system-ui,sans-serif;margin:24px}pre{background:#f4f4f2;padding:12px;border-radius:8px;white-space:pre-wrap}.ok{color:#176}.bad{color:#b00}</style>
+<h2>Keystone × KeePass compatibility</h2>
+<p>Opens every fixture made by the real KeePass library and compares the decrypted content with what KeePass itself reads.</p>
+<pre id="result">running…</pre>
+<script src="/src/kdbx.js"></script>
+<script src="/src/util.js"></script>
+<script src="/src/vault.js"></script>
+<script src="/t/lib.js"></script>
+<script src="/t/lib2.js"></script>
+<script>
+window.ready = (async () => {
+  const t = document.createElement('script'); t.type = 'text/plain'; t.id = 'worker-src';
+  t.textContent = await (await fetch('/src/worker.js')).text();
+  document.head.appendChild(t);
+  window.getBytes = async (u) => new Uint8Array(await (await fetch(u)).arrayBuffer());
+  return true;
+})();
+(async () => {
+  await window.ready;
+  const res = await runOpenTests();
+  const lines = Object.entries(res).map(([k, v]) => (v.startsWith('ok') ? '✔ ' : '✘ ') + k.padEnd(22) + v);
+  const failed = Object.values(res).filter((v) => !v.startsWith('ok')).length;
+  document.getElementById('result').textContent = lines.join('\n') + '\n\n' + (failed ? failed + ' FAILED' : 'ALL ' + lines.length + ' PASSED');
+  document.title = failed ? 'FAILED' : 'PASSED';
+})();
+</script>
