@@ -1,0 +1,37 @@
+# Never commit real user data, databases, key files or secrets
+*.kdbx
+*.keyx
+*.vault
+*.kdb
+*.db
+*.sqlite
+*.sqlite3
+*.key
+*.pem
+.env
+.env.*
+secrets/
+test-data/
+
+# Build output
+dist/
+build/
+out/
+bin/
+obj/
+*.msi
+*.exe
+
+# Dependencies
+node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / editor files
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
