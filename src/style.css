@@ -1,3 +1,5 @@
+/* Inter (SIL Open Font License, see THIRD_PARTY_NOTICES.md): the closest free relative of Apple's San Francisco. Embedded so it works on every PC. */
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 100 900; font-display: swap; src: url(data:font/woff2;base64,/*FONT*/) format('woff2'); }
 /* Keystone — warm stone neutrals, one deep teal accent. System fonts only (no network). */
 :root {
   --bg: #f1efea; --panel: #f8f7f3; --surface: #ffffff; --hover: #efede6; --active: #e6e3da;
@@ -8,9 +10,9 @@
   --shadow-1: 0 1px 2px rgba(40, 30, 10, .06);
   --shadow-2: 0 14px 40px rgba(40, 30, 10, .16), 0 2px 8px rgba(40, 30, 10, .08);
   --focus: 0 0 0 3px rgba(26, 106, 88, .28);
-  --sans: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
-  --display: "Segoe UI Variable Display", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
-  --mono: "Cascadia Mono", "Cascadia Code", Consolas, "SF Mono", Menlo, monospace;
+  --sans: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --display: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  --mono: "SF Mono", ui-monospace, Menlo, "Cascadia Mono", "Cascadia Code", Consolas, monospace;
   --ease: cubic-bezier(.23, 1, .32, 1);          /* strong ease-out: responsive entrances */
   color-scheme: light;
 }
@@ -354,3 +356,219 @@ button.chip:hover { background: var(--active); }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
 @media (hover: none) { .frow .acts, .nav .more { opacity: 1; } }
+
+/* ======================================================================================================
+   macOS-style design layer: source-list sidebar, unified toolbar, grouped forms, compact controls.
+   Later rules intentionally override the base styles above.
+   ====================================================================================================== */
+:root {
+  --bg: #f5f5f7; --panel: #ececef; --surface: #ffffff; --list: #ffffff;
+  --hover: rgba(0, 0, 0, .05); --active: rgba(0, 0, 0, .09);
+  --ink: #1d1d1f; --ink-2: #5f5f64; --ink-3: #8e8e93;
+  --line: rgba(0, 0, 0, .09); --line-2: rgba(0, 0, 0, .17);
+  --accent: #0b7f6a; --accent-hover: #096d5b; --accent-soft: rgba(11, 127, 106, .12); --accent-line: rgba(11, 127, 106, .35);
+  --btn: #ffffff; --btn-shadow: 0 .5px 1px rgba(0, 0, 0, .12), 0 0 0 .5px rgba(0, 0, 0, .04);
+  --shadow-1: none; --focus: 0 0 0 3.5px rgba(11, 127, 106, .32);
+}
+:root[data-theme="dark"] {
+  --bg: #1c1c1e; --panel: #262628; --surface: #2c2c2e; --list: #202022;
+  --hover: rgba(255, 255, 255, .07); --active: rgba(255, 255, 255, .12);
+  --ink: #f5f5f7; --ink-2: #b0b0b6; --ink-3: #8a8a90;
+  --line: rgba(255, 255, 255, .09); --line-2: rgba(255, 255, 255, .17);
+  --accent: #2fb89c; --accent-hover: #46c8ad; --accent-soft: rgba(47, 184, 156, .18); --accent-line: rgba(47, 184, 156, .4); --accent-ink: #04241d;
+  --btn: #3a3a3c; --btn-shadow: 0 .5px 1px rgba(0, 0, 0, .4); --focus: 0 0 0 3.5px rgba(47, 184, 156, .38);
+}
+body { font-size: 13px; line-height: 1.4; }
+svg.ic { width: 16px; height: 16px; stroke-width: 1.55; }
+
+/* controls: compact push buttons, fields and switches */
+.btn { height: 28px; padding: 0 12px; border-radius: 7px; border: 0; background: var(--btn); box-shadow: var(--btn-shadow); font-weight: 500; font-size: 13px; }
+.btn:hover { background: var(--btn); filter: brightness(.97); }
+:root[data-theme="dark"] .btn:hover { filter: brightness(1.12); }
+.btn.primary { background: var(--accent); box-shadow: 0 .5px 1px rgba(0, 0, 0, .25); color: var(--accent-ink, #fff); }
+.btn.primary:hover { background: var(--accent-hover); filter: none; }
+.btn.ghost { background: transparent; box-shadow: none; }
+.btn.ghost:hover { background: var(--hover); filter: none; }
+.btn.danger.solid { color: #fff; }
+.btn.sm { height: 24px; padding: 0 9px; font-size: 12px; border-radius: 6px; }
+.icon-btn { width: 28px; height: 28px; border-radius: 6px; }
+.input { height: 28px; padding: 0 9px; border-radius: 7px; border: 1px solid var(--line-2); background: var(--surface); font-size: 13px; }
+:root[data-theme="dark"] .input { background: rgba(255, 255, 255, .06); }
+.input:focus { border-color: var(--accent); }
+textarea.input { padding: 7px 9px; }
+.field > label, .lbl { font-weight: 500; color: var(--ink-2); }
+.seg { background: var(--hover); border-radius: 8px; padding: 2px; }
+.seg button { padding: 3px 12px; border-radius: 6px; font-size: 12.5px; font-weight: 500; }
+.seg button[aria-pressed="true"] { background: var(--btn); box-shadow: var(--btn-shadow); }
+.check input[type="checkbox"] { accent-color: var(--accent); }
+.setrow .check input[type="checkbox"] {
+  appearance: none; width: 38px; height: 22px; border-radius: 11px; background: var(--line-2); position: relative; cursor: pointer; transition: background .2s var(--ease); flex: none;
+}
+.setrow .check input[type="checkbox"]::after { content: ""; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .35); transition: transform .22s var(--ease); }
+.setrow .check input[type="checkbox"]:checked { background: var(--accent); }
+.setrow .check input[type="checkbox"]:checked::after { transform: translateX(16px); }
+
+/* the toolbar: one unified bar, inset search field */
+.app { grid-template-rows: 52px minmax(0, 1fr); }
+.topbar { background: var(--panel); border-bottom: 1px solid var(--line); }
+.topbar .lead b { font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
+.logo { width: 26px; height: 26px; border-radius: 7px; }
+.logo svg { width: 16px; height: 16px; }
+.search { max-width: 420px; }
+.search input { height: 28px; border: 0; border-radius: 8px; background: var(--active); font-size: 13px; padding-left: 32px; }
+:root[data-theme="dark"] .search input { background: rgba(255, 255, 255, .09); }
+.search input:focus { background: var(--surface); box-shadow: var(--focus), 0 0 0 1px var(--accent); }
+.search .ic { left: 10px; width: 14px; height: 14px; }
+.kbd { border: 0; background: var(--hover); border-radius: 4px; padding: 1px 5px; font-size: 10.5px; }
+.status { font-size: 12px; }
+
+/* sidebar: a source list */
+.side { background: var(--panel); border-right: 1px solid var(--line); }
+.side-scroll { padding: 8px 8px 12px; }
+.side h4 { margin: 14px 10px 4px; font-size: 11px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--ink-3); }
+.nav { height: 28px; border-radius: 6px; font-size: 13px; color: var(--ink); gap: 8px; }
+.nav:hover { background: var(--hover); }
+.nav .ic:first-of-type { color: var(--accent); }
+.nav .count { font-size: 11.5px; }
+.nav[aria-current="true"] { background: var(--accent); color: #fff; font-weight: 500; }
+:root[data-theme="dark"] .nav[aria-current="true"] { color: var(--accent-ink); }
+.nav[aria-current="true"] .ic:first-of-type, .nav[aria-current="true"] .count, .nav[aria-current="true"] .chev { color: inherit; }
+.nav[aria-current="true"] .count { opacity: .8; }
+.side-foot { border-top: 1px solid var(--line); padding: 6px 8px; }
+
+/* list: inset rounded selection */
+.listpane { background: var(--list); }
+.listhead { padding: 12px 12px 6px 16px; }
+.listhead h2 { font-size: 15px; font-weight: 700; letter-spacing: -.015em; }
+.listhead select { height: 24px; border: 0; background: var(--hover); border-radius: 6px; font-size: 12px; }
+.list { padding: 2px 8px 10px; }
+.row { gap: 10px; padding: 7px 10px; border-radius: 8px; }
+.row .t { font-weight: 600; font-size: 13px; }
+.row .s { font-size: 12px; }
+.row:hover { background: var(--hover); }
+.row[aria-selected="true"] { background: var(--accent); color: #fff; }
+:root[data-theme="dark"] .row[aria-selected="true"] { color: var(--accent-ink); }
+.row[aria-selected="true"]::before { display: none; }
+.row[aria-selected="true"] .s, .row[aria-selected="true"] .g, .row[aria-selected="true"] .flags { color: inherit; opacity: .82; }
+.row[aria-selected="true"] .flags .exp { color: inherit; }
+.avatar { width: 32px; height: 32px; border-radius: 50%; font-size: 13.5px; font-weight: 600; }
+.avatar.lg { width: 60px; height: 60px; font-size: 25px; }
+.empty .ic { stroke-width: 1.2; }
+
+/* detail: grouped forms with the label on the left */
+.detail { background: var(--bg); }
+.detail-inner { max-width: 640px; padding: 24px 28px 56px; }
+.dhead h1 { font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
+.card { border-radius: 10px; border: 1px solid var(--line); box-shadow: none; background: var(--surface); margin-bottom: 16px; }
+.card > h3 { padding: 10px 14px 2px; font-size: 11.5px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--ink-3); }
+.frow { min-height: 38px; padding: 8px 8px 8px 14px; }
+.frow + .frow { border-top: 1px solid var(--line); }
+.frow .fb:has(> .fl) { display: grid; grid-template-columns: 124px minmax(0, 1fr); column-gap: 14px; align-items: baseline; }
+.frow .fl { font-size: 13px; font-weight: 400; color: var(--ink-2); flex-wrap: wrap; row-gap: 3px; }
+.frow .fv { font-size: 13.5px; margin-top: 0; }
+.pw-v { font-size: 13.5px; }
+.totp { font-size: 19px; }
+.meta-grid > div { padding: 9px 14px; }
+.hist { padding: 7px 8px 7px 14px; }
+.banner { border-radius: 10px; font-size: 13px; }
+.chip { height: 22px; border-radius: 11px; font-size: 12px; }
+
+/* sheets, menus, toasts */
+.modal { width: min(440px, 100%); border-radius: 14px; box-shadow: 0 22px 60px rgba(0, 0, 0, .28), 0 0 0 .5px var(--line-2), inset 0 1px 0 rgba(255, 255, 255, .5); }
+.modal.wide { width: min(560px, 100%); }
+.modal header { padding: 18px 20px 4px; }
+.modal header h2 { font-size: 15px; font-weight: 700; }
+.modal footer { padding: 12px 20px 16px; }
+.menu { border-radius: 9px; padding: 4px; min-width: 200px; box-shadow: 0 10px 34px rgba(0, 0, 0, .25), 0 0 0 .5px var(--line-2); }
+.menu button { height: 26px; border-radius: 5px; font-size: 13px; }
+.menu button:hover, .menu button:focus-visible { background: var(--accent); color: #fff; }
+.menu button:hover .ic, .menu button:focus-visible .ic { color: #fff; }
+.toast { border-radius: 10px; font-size: 13px; padding: 9px 12px; }
+
+/* unlock: a lock-screen-style card */
+.unlock-card { width: min(380px, 100%); border-radius: 18px; padding: 32px 30px 22px; border: 0; background: color-mix(in srgb, var(--surface) 82%, transparent); backdrop-filter: blur(34px) saturate(1.6); box-shadow: 0 24px 70px rgba(0, 0, 0, .22), 0 0 0 .5px var(--line-2), inset 0 1px 0 rgba(255, 255, 255, .5); }
+:root[data-theme="dark"] .unlock-card { box-shadow: 0 24px 70px rgba(0, 0, 0, .55), 0 0 0 .5px var(--line-2), inset 0 1px 0 rgba(255, 255, 255, .06); }
+.brand { flex-direction: column; text-align: center; gap: 10px; margin-bottom: 18px; }
+.brand .logo { width: 64px; height: 64px; border-radius: 15px; box-shadow: 0 6px 18px rgba(11, 127, 106, .35); }
+.brand .logo svg { width: 40px; height: 40px; }
+.brand b { font-size: 22px; font-weight: 700; }
+.unlock h1 { text-align: center; font-size: 15px; font-weight: 600; }
+.unlock .sub { text-align: center; font-size: 12.5px; color: var(--ink-3); margin-bottom: 16px; }
+.drop { border-radius: 12px; padding: 22px 14px; background: transparent; }
+.filechip, .recent { border-radius: 10px; background: var(--hover); border: 0; }
+.method { border-radius: 10px; background: var(--hover); border: 0; }
+.method .filechip { background: var(--surface); }
+.unlock .btn.primary { height: 34px !important; font-size: 13.5px !important; border-radius: 8px; }
+.progress { height: 4px; }
+@media (prefers-reduced-transparency: reduce) { .unlock-card { background: var(--surface); backdrop-filter: none; } }
+
+/* ======================================================================================================
+   System palette: Apple's semantic colours. Blue is the accent; red, orange, yellow and green appear
+   only where they carry meaning (strength, warnings, errors). Neutrals follow the macOS grays.
+   ====================================================================================================== */
+:root {
+  --blue: #007aff; --red: #ff3b30; --orange: #ff9500; --yellow: #ffcc00; --green: #34c759;
+  --accent: var(--blue); --accent-hover: #0068d9; --accent-ink: #ffffff;
+  --accent-soft: rgba(0, 122, 255, .12); --accent-line: rgba(0, 122, 255, .4);
+  --bg: #f5f5f7; --panel: #e9e9ed; --surface: #ffffff; --list: #ffffff;
+  --ink: #1d1d1f; --ink-2: #6c6c70; --ink-3: #8e8e93;
+  --line: rgba(60, 60, 67, .13); --line-2: rgba(60, 60, 67, .26);
+  --danger: var(--red); --danger-soft: rgba(255, 59, 48, .11); --warn: #b86100; --warn-soft: rgba(255, 149, 0, .14);
+  --focus: 0 0 0 3.5px rgba(0, 122, 255, .35);
+}
+:root[data-theme="dark"] {
+  --blue: #0a84ff; --red: #ff453a; --orange: #ff9f0a; --yellow: #ffd60a; --green: #30d158;
+  --accent: var(--blue); --accent-hover: #409cff; --accent-ink: #ffffff;
+  --accent-soft: rgba(10, 132, 255, .2); --accent-line: rgba(10, 132, 255, .5);
+  --bg: #1c1c1e; --panel: #2a2a2c; --surface: #2c2c2e; --list: #1e1e20;
+  --ink: #f5f5f7; --ink-2: #aeaeb2; --ink-3: #8e8e93;
+  --line: rgba(84, 84, 88, .55); --line-2: rgba(120, 120, 128, .45);
+  --danger: var(--red); --danger-soft: rgba(255, 69, 58, .18); --warn: #ff9f0a; --warn-soft: rgba(255, 159, 10, .16);
+  --focus: 0 0 0 3.5px rgba(10, 132, 255, .45);
+}
+::selection { background: rgba(0, 122, 255, .28); }
+a, .frow .fv a { color: var(--accent); }
+.logo, .brand .logo { background: #1a6a58; color: #fff; }          /* the app icon keeps its own brand colour */
+
+/* status colours carry meaning */
+.meter[data-l="1"] i:nth-child(-n+1) { background: var(--red); }
+.meter[data-l="2"] i:nth-child(-n+2) { background: var(--orange); }
+.meter[data-l="3"] i:nth-child(-n+3) { background: var(--yellow); }
+.meter[data-l="4"] i:nth-child(-n+4) { background: var(--green); }
+.ring.low .fg { stroke: var(--red); }
+.pw-v .s, .bigpw .s { color: var(--red); }
+:root[data-theme="dark"] .pw-v .s, :root[data-theme="dark"] .bigpw .s { color: var(--red); }
+.pw-v .d, .bigpw .d { color: var(--blue); }
+.status .dot { background: var(--green); }
+.status.dirty .dot { background: var(--orange); box-shadow: 0 0 0 4px color-mix(in srgb, var(--orange) 24%, transparent); }
+.toast .ic { color: var(--green); }
+.toast.err .ic { color: var(--red); }
+:root[data-theme="dark"] .toast .ic { color: #1f9d41; }
+.row .flags .exp { color: var(--orange); }
+.banner.info { background: var(--accent-soft); color: var(--accent); }
+.privacy .ic { color: var(--green); }
+
+/* avatars: solid system colours with white initials, like Contacts */
+.avatar { background: hsl(var(--h) 68% 54%); color: #fff; }
+:root[data-theme="dark"] .avatar { background: hsl(var(--h) 60% 50%); color: #fff; }
+.row[aria-selected="true"] .avatar { box-shadow: 0 0 0 2px rgba(255, 255, 255, .65); }
+
+/* selection and primary actions use the blue accent consistently */
+.btn.primary { background: var(--accent); color: #fff; }
+.btn.primary:hover { background: var(--accent-hover); }
+.btn.danger { color: var(--red); }
+.btn.danger.solid { background: var(--red); color: #fff; }
+.errmsg { background: var(--danger-soft); color: var(--red); }
+.nav[aria-current="true"], .row[aria-selected="true"], .menu button:hover, .menu button:focus-visible { background: var(--accent); color: #fff; }
+.nav .ic:first-of-type { color: var(--accent); }
+.drop:hover, .drop.over { border-color: var(--accent); background: var(--accent-soft); }
+.unlock { background: radial-gradient(900px 520px at 50% -12%, color-mix(in srgb, var(--blue) 16%, transparent), transparent 70%), var(--bg); }
+.brand .logo { box-shadow: 0 6px 18px rgba(26, 106, 88, .38); }
+
+/* ---------- app icon, in the interface: squircle, vertical gradient, hairline edge, rounded glyph ---------- */
+.logo, .brand .logo {
+  background: linear-gradient(180deg, #3ac9af 0%, #0d5e4e 100%); border-radius: 23%; color: #fff;
+  box-shadow: inset 0 0 0 .5px rgba(255, 255, 255, .28), inset 0 1px 0 rgba(255, 255, 255, .4), 0 1px 2px rgba(0, 40, 30, .35);
+}
+.brand .logo { box-shadow: inset 0 0 0 .5px rgba(255, 255, 255, .28), inset 0 1px 0 rgba(255, 255, 255, .4), 0 8px 22px rgba(13, 94, 78, .38); }
+.logo svg path { stroke: currentColor; stroke-width: .5; stroke-linejoin: round; filter: drop-shadow(0 .6px .6px rgba(0, 50, 40, .35)); }

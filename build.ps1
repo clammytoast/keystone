@@ -10,8 +10,9 @@ $worker = Read 'worker.js'
 if ($worker -match '</script') { throw 'worker.js must not contain </script' }
 if ($script -match '</script') { throw 'app scripts must not contain </script' }
 
+$font = [Convert]::ToBase64String([IO.File]::ReadAllBytes((Join-Path $src 'fonts\InterVariable.woff2')))
 $html = Read 'index.html'
-$html = $html.Replace('/*STYLE*/', (Read 'style.css')).Replace('/*WORKER*/', $worker).Replace('/*SCRIPT*/', $script)
+$html = $html.Replace('/*STYLE*/', (Read 'style.css').Replace('/*FONT*/', $font)).Replace('/*WORKER*/', $worker).Replace('/*SCRIPT*/', $script)
 New-Item -ItemType Directory -Force (Join-Path $PSScriptRoot 'build') | Out-Null
 $out = Join-Path $PSScriptRoot 'build\Keystone.html'
 [IO.File]::WriteAllText($out, $html, $utf8)
