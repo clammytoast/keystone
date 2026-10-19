@@ -1,4 +1,4 @@
-// Keystone Setup (Windows) — installer and uninstaller in one small exe.
+﻿// Keystone Setup (Windows) — installer and uninstaller in one small exe.
 //
 //   Keystone-Setup.exe               guided install
 //   Keystone-Setup.exe /S            silent install   (add /nodesktop, /noassoc, /D=C:\Where\To\Install — /D must be last)
@@ -279,16 +279,159 @@ namespace KeystoneSetup
         }
     }
 
+    // ------------------------------------------------------------------------------------------------ custom-painted controls (Apple-style)
+    static class Gfx
+    {
+        public static GraphicsPath Rounded(RectangleF r, float d)
+        {
+            GraphicsPath p = new GraphicsPath();
+            if (d <= 0) { p.AddRectangle(r); return p; }
+            if (d > r.Height) d = r.Height;
+            p.AddArc(r.X, r.Y, d, d, 180, 90); p.AddArc(r.Right - d, r.Y, d, d, 270, 90);
+            p.AddArc(r.Right - d, r.Bottom - d, d, d, 0, 90); p.AddArc(r.X, r.Bottom - d, d, d, 90, 90); p.CloseFigure();
+            return p;
+        }
+        public static Color Mix(Color a, Color b, float t)
+        {
+            return Color.FromArgb((int)(a.R + (b.R - a.R) * t), (int)(a.G + (b.G - a.G) * t), (int)(a.B + (b.B - a.B) * t));
+        }
+    }
+
+    // a macOS-style switch
+    class Pill : Control
+    {
+        public Color Backdrop = Color.White, OnColor = Color.FromArgb(52, 199, 89), OffColor = Color.FromArgb(200, 200, 205);
+        bool on; float pos; System.Windows.Forms.Timer tm;
+        public event EventHandler CheckedChanged;
+        public bool Checked
+        {
+            get { return on; }
+            set { if (on == value) return; on = value; tm.Start(); if (CheckedChanged != null) CheckedChanged(this, EventArgs.Empty); }
+        }
+        public Pill(bool value)
+        {
+            SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.Selectable, true);
+            on = value; pos = value ? 1f : 0f; TabStop = true; Cursor = Cursors.Hand; Size = new Size(42, 26);
+            tm = new System.Windows.Forms.Timer { Interval = 15 };
+            tm.Tick += delegate
+            {
+                float target = on ? 1f : 0f; pos += (target - pos) * 0.38f;
+                if (Math.Abs(target - pos) < 0.02f) { pos = target; tm.Stop(); }
+                Invalidate();
+            };
+        }
+        protected override void OnClick(EventArgs e) { base.OnClick(e); Focus(); Checked = !Checked; }
+        protected override void OnKeyDown(KeyEventArgs e) { base.OnKeyDown(e); if (e.KeyCode == Keys.Space) { Checked = !Checked; e.Handled = true; } }
+        protected override void OnGotFocus(EventArgs e) { base.OnGotFocus(e); Invalidate(); }
+        protected override void OnLostFocus(EventArgs e) { base.OnLostFocus(e); Invalidate(); }
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            Graphics g = e.Graphics; g.Clear(Backdrop); g.SmoothingMode = SmoothingMode.AntiAlias;
+            RectangleF r = new RectangleF(2, 2, Width - 5, Height - 5);
+            using (GraphicsPath p = Gfx.Rounded(r, r.Height))
+            using (SolidBrush b = new SolidBrush(Gfx.Mix(OffColor, OnColor, pos))) g.FillPath(b, p);
+            float d = r.Height - 4, x = r.X + 2 + pos * (r.Width - d - 4);
+            using (SolidBrush sh = new SolidBrush(Color.FromArgb(50, 0, 0, 0))) g.FillEllipse(sh, x, r.Y + 2.8f, d, d);
+            g.FillEllipse(Brushes.White, x, r.Y + 2, d, d);
+            if (Focused && ShowFocusCues)
+                using (GraphicsPath p = Gfx.Rounded(new RectangleF(0.5f, 0.5f, Width - 2, Height - 2), Height - 2))
+                using (Pen pen = new Pen(Color.FromArgb(120, 0, 122, 255), 2)) g.DrawPath(pen, p);
+        }
+    }
+
+    // rounded push button
+    class AppButton : Button
+    {
+        public Color Fill, FillHover, FillDown, Ink, Border, Backdrop, Ring = Color.FromArgb(120, 0, 122, 255); public bool Primary;
+        bool hot, down;
+        public AppButton()
+        {
+            SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true);
+            FlatStyle = FlatStyle.Flat; FlatAppearance.BorderSize = 0; Cursor = Cursors.Hand; UseVisualStyleBackColor = false;
+        }
+        protected override void OnMouseEnter(EventArgs e) { hot = true; Invalidate(); base.OnMouseEnter(e); }
+        protected override void OnMouseLeave(EventArgs e) { hot = down = false; Invalidate(); base.OnMouseLeave(e); }
+        protected override void OnMouseDown(MouseEventArgs e) { down = true; Invalidate(); base.OnMouseDown(e); }
+        protected override void OnMouseUp(MouseEventArgs e) { down = false; Invalidate(); base.OnMouseUp(e); }
+        protected override void OnEnabledChanged(EventArgs e) { base.OnEnabledChanged(e); Invalidate(); }
+        protected override void OnGotFocus(EventArgs e) { base.OnGotFocus(e); Invalidate(); }
+        protected override void OnLostFocus(EventArgs e) { base.OnLostFocus(e); Invalidate(); }
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            Graphics g = e.Graphics; g.Clear(Backdrop); g.SmoothingMode = SmoothingMode.AntiAlias;
+            Color f = down ? FillDown : (hot ? FillHover : Fill), ink = Ink;
+            if (!Enabled) { f = Gfx.Mix(f, Backdrop, 0.55f); ink = Gfx.Mix(ink, Backdrop, 0.4f); }
+            RectangleF r = new RectangleF(2, 2, Width - 5, Height - 5);
+            using (GraphicsPath p = Gfx.Rounded(r, 14))
+            {
+                using (SolidBrush b = new SolidBrush(f)) g.FillPath(b, p);
+                if (!Primary) using (Pen pen = new Pen(Border, 1)) g.DrawPath(pen, p);
+            }
+            if (Focused && ShowFocusCues)
+                using (GraphicsPath p = Gfx.Rounded(new RectangleF(0.5f, 0.5f, Width - 2, Height - 2), 16))
+                using (Pen pen = new Pen(Ring, 2)) g.DrawPath(pen, p);
+            TextRenderer.DrawText(g, Text, Font, ClientRectangle, ink, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine | TextFormatFlags.NoPadding);
+        }
+    }
+
+    // slim, rounded progress bar that eases toward its value
+    class SlimBar : Control
+    {
+        public Color Track, Fill, Backdrop;
+        float shown; int target; System.Windows.Forms.Timer tm;
+        public int Value { get { return target; } set { target = Math.Max(0, Math.Min(100, value)); tm.Start(); } }
+        public SlimBar()
+        {
+            SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true);
+            tm = new System.Windows.Forms.Timer { Interval = 15 };
+            tm.Tick += delegate { shown += (target - shown) * 0.2f; if (Math.Abs(target - shown) < 0.3f) { shown = target; tm.Stop(); } Invalidate(); };
+        }
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            Graphics g = e.Graphics; g.Clear(Backdrop); g.SmoothingMode = SmoothingMode.AntiAlias;
+            RectangleF r = new RectangleF(0, 0, Width, Height);
+            using (GraphicsPath p = Gfx.Rounded(r, Height)) using (SolidBrush b = new SolidBrush(Track)) g.FillPath(b, p);
+            if (shown > 0.5f)
+            {
+                float w = Math.Max(Height, Width * shown / 100f);
+                using (GraphicsPath p = Gfx.Rounded(new RectangleF(0, 0, w, Height), Height)) using (SolidBrush b = new SolidBrush(Fill)) g.FillPath(b, p);
+            }
+        }
+    }
+
+    // inset grouped list: one rounded surface with hairline separators
+    class Group : Panel
+    {
+        public Color Surface, Line, Backdrop; public int Rows = 1;
+        public Group() { DoubleBuffered = true; ResizeRedraw = true; }
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            Graphics g = e.Graphics; g.Clear(Backdrop); g.SmoothingMode = SmoothingMode.AntiAlias;
+            RectangleF r = new RectangleF(0.5f, 0.5f, Width - 1.5f, Height - 1.5f);
+            using (GraphicsPath p = Gfx.Rounded(r, 20))
+            {
+                using (SolidBrush b = new SolidBrush(Surface)) g.FillPath(b, p);
+                using (Pen pen = new Pen(Line, 1)) g.DrawPath(pen, p);
+            }
+            using (Pen pen = new Pen(Line, 1))
+                for (int i = 1; i < Rows; i++) { float y = (float)Height * i / Rows; g.DrawLine(pen, 16, y, Width - 1, y); }
+        }
+    }
+
     // ------------------------------------------------------------------------------------------------ the wizard window
     class Wizard : Form
     {
         readonly Options o;
         readonly bool dark;
-        readonly Color bg, panel, ink, ink2, line, accent = Color.FromArgb(26, 106, 88), accentHover = Color.FromArgb(21, 89, 74);
+        readonly Color bg, surface, ink, ink2, line, accent, red, green;
         Panel pageOptions, pageProgress, pageFinish;
-        TextBox dirBox; CheckBox chkDesktop, chkAssoc, chkLaunch, chkPurge;
-        ProgressBar bar; Label stepLabel, finishTitle, finishText;
-        Button btnPrimary, btnCancel;
+        Group grpLaunch;
+        Label pathLabel;
+        string dir;
+        Pill chkDesktop, chkAssoc, chkLaunch, chkPurge;
+        SlimBar bar; Label stepLabel, finishTitle, finishText;
+        AppButton btnPrimary, btnCancel;
+        Image logo;
         bool working, ok;
 
         static bool SystemDark()
@@ -299,149 +442,163 @@ namespace KeystoneSetup
 
         public Wizard(Options options)
         {
-            o = options;
+            o = options; dir = o.InstallDir;
             dark = SystemDark();
-            bg = dark ? Color.FromArgb(29, 29, 27) : Color.White;
-            panel = dark ? Color.FromArgb(23, 23, 22) : Color.FromArgb(248, 247, 243);
-            ink = dark ? Color.FromArgb(239, 237, 230) : Color.FromArgb(29, 28, 25);
-            ink2 = dark ? Color.FromArgb(182, 178, 167) : Color.FromArgb(87, 84, 76);
-            line = dark ? Color.FromArgb(58, 58, 55) : Color.FromArgb(208, 204, 192);
+            bg = dark ? Color.FromArgb(28, 28, 30) : Color.FromArgb(245, 245, 247);
+            surface = dark ? Color.FromArgb(44, 44, 46) : Color.White;
+            ink = dark ? Color.FromArgb(245, 245, 247) : Color.FromArgb(29, 29, 31);
+            ink2 = dark ? Color.FromArgb(174, 174, 178) : Color.FromArgb(108, 108, 112);
+            line = dark ? Color.FromArgb(70, 70, 74) : Color.FromArgb(226, 226, 230);
+            accent = dark ? Color.FromArgb(10, 132, 255) : Color.FromArgb(0, 122, 255);
+            red = dark ? Color.FromArgb(255, 69, 58) : Color.FromArgb(255, 59, 48);
+            green = dark ? Color.FromArgb(48, 209, 88) : Color.FromArgb(52, 199, 89);
+            try { using (Stream s = Assembly.GetExecutingAssembly().GetManifestResourceStream("payload.icon.png")) { if (s != null) logo = new Bitmap(s); } } catch (Exception) { }
             AutoScaleDimensions = new SizeF(96F, 96F); AutoScaleMode = AutoScaleMode.Dpi;
-            Font = new Font("Segoe UI", 9.5F);
+            Font = new Font("Segoe UI", 9.5F); DoubleBuffered = true;
             Text = o.Uninstall ? "Uninstall Keystone" : "Keystone Setup";
             try { Icon = Icon.ExtractAssociatedIcon(Assembly.GetExecutingAssembly().Location); } catch (Exception) { }
             FormBorderStyle = FormBorderStyle.FixedDialog; MaximizeBox = false; MinimizeBox = true;
-            StartPosition = FormStartPosition.CenterScreen; ClientSize = new Size(640, 420); BackColor = bg; ForeColor = ink;
+            StartPosition = FormStartPosition.CenterScreen; ClientSize = new Size(520, 480); BackColor = bg; ForeColor = ink;
 
-            Panel side = new Panel { Left = 0, Top = 0, Width = 210, Height = 420, BackColor = accent };
-            side.Paint += PaintBanner;
-            Controls.Add(side);
-
-            btnPrimary = MakeButton(o.Uninstall ? "Uninstall" : "Install", true); btnPrimary.SetBounds(440, 366, 176, 36);
-            btnCancel = MakeButton("Cancel", false); btnCancel.SetBounds(332, 366, 100, 36);
+            btnPrimary = MakeButton(o.Uninstall ? "Uninstall" : "Install"); btnPrimary.SetBounds(344, 428, 136, 32);
+            btnCancel = MakeButton("Cancel"); btnCancel.SetBounds(238, 428, 96, 32);
+            StylePrimary(btnPrimary, o.Uninstall ? red : accent); StyleSecondary(btnCancel);
             btnPrimary.Click += delegate { OnPrimary(); };
             btnCancel.Click += delegate { if (!working) Close(); };
             Controls.AddRange(new Control[] { btnPrimary, btnCancel });
             AcceptButton = btnPrimary; CancelButton = btnCancel;           // Enter = Install, Esc = Cancel
             BuildPages();
             Show(pageOptions);
-            if (o.Uninstall) { btnPrimary.BackColor = Color.FromArgb(179, 38, 30); }
         }
 
-        Button MakeButton(string text, bool primary)
+        AppButton MakeButton(string text)
         {
-            Button b = new Button { Text = text, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, Font = new Font("Segoe UI Semibold", 9.5F) };
-            b.FlatAppearance.BorderSize = primary ? 0 : 1; b.FlatAppearance.BorderColor = line;
-            b.BackColor = primary ? accent : bg; b.ForeColor = primary ? Color.White : ink;
-            b.FlatAppearance.MouseOverBackColor = primary ? accentHover : (dark ? Color.FromArgb(45, 45, 42) : Color.FromArgb(239, 237, 230));
-            return b;
+            return new AppButton { Text = text, Font = new Font("Segoe UI Semibold", 10F), Backdrop = bg, TabStop = true };
         }
-        Label MakeLabel(string text, int x, int y, int w, int h, float size, FontStyle style, Color color)
+        void StylePrimary(AppButton b, Color c)
         {
-            return new Label { Text = text, Left = x, Top = y, Width = w, Height = h, ForeColor = color, BackColor = Color.Transparent, Font = new Font("Segoe UI", size, style), AutoEllipsis = false };
+            b.Primary = true; b.Fill = c; b.FillHover = Gfx.Mix(c, Color.Black, 0.12f); b.FillDown = Gfx.Mix(c, Color.Black, 0.26f); b.Ink = Color.White; b.Border = c; b.Invalidate();
         }
-        CheckBox MakeCheck(string text, int y, bool value)
+        void StyleSecondary(AppButton b)
         {
-            CheckBox c = new CheckBox { Text = text, Left = 250, Top = y, Width = 366, Height = 26, Checked = value, ForeColor = ink, BackColor = Color.Transparent, FlatStyle = FlatStyle.System };
-            return c;
+            b.Primary = false; b.Fill = surface; b.FillHover = Gfx.Mix(surface, ink, 0.05f); b.FillDown = Gfx.Mix(surface, ink, 0.1f); b.Ink = ink; b.Border = line; b.Invalidate();
         }
-
-        void PaintBanner(object sender, PaintEventArgs e)
+        Label MakeLabel(string text, int x, int y, int w, int h, float size, string family, Color color, ContentAlignment align)
         {
-            Graphics g = e.Graphics; g.SmoothingMode = SmoothingMode.AntiAlias;
-            // logo: white rounded square with a teal keystone and keyhole
-            Rectangle r = new Rectangle(34, 48, 72, 72);
-            using (GraphicsPath p = Rounded(r, 20)) g.FillPath(Brushes.White, p);
-            float k = 72f / 32f; float ox = 34, oy = 48;
-            Func<float, float, PointF> pt = delegate (float x, float y) { return new PointF(ox + x * k, oy + y * k); };
-            using (SolidBrush b = new SolidBrush(accent))
-            {
-                g.FillPolygon(b, new[] { pt(11, 6), pt(21, 6), pt(25, 26), pt(7, 26) });
-                g.FillEllipse(Brushes.White, ox + 13.4f * k, oy + 11.4f * k, 5.2f * k, 5.2f * k);
-                g.FillPolygon(Brushes.White, new[] { pt(14.7f, 16.4f), pt(17.3f, 16.4f), pt(18.1f, 22.6f), pt(13.9f, 22.6f) });
-            }
-            using (Font f = new Font("Segoe UI Semibold", 22F)) g.DrawString("Keystone", f, Brushes.White, 30, 140);
-            using (Font f = new Font("Segoe UI", 10F)) using (SolidBrush b = new SolidBrush(Color.FromArgb(210, 240, 232)))
-                g.DrawString("Your KeePass vault,\nmade simple.", f, b, 32, 186);
-            using (Font f = new Font("Segoe UI", 8.5F)) using (SolidBrush b = new SolidBrush(Color.FromArgb(190, 225, 215)))
-                g.DrawString("Version " + Core.Version, f, b, 32, 380);
+            return new Label { Text = text, Left = x, Top = y, Width = w, Height = h, ForeColor = color, BackColor = Color.Transparent, Font = new Font(family, size), TextAlign = align, AutoEllipsis = false };
         }
-        static GraphicsPath Rounded(Rectangle r, int d)
+        Label Title(string text) { return MakeLabel(text, 0, 2, 520, 36, 21F, "Segoe UI Semibold", ink, ContentAlignment.MiddleCenter); }
+        Label Subtitle(string text, int h) { return MakeLabel(text, 60, 44, 400, h, 10F, "Segoe UI", ink2, ContentAlignment.TopCenter); }
+        Pill MakePill(bool value, Color backdrop, int row)
         {
-            GraphicsPath p = new GraphicsPath();
-            p.AddArc(r.X, r.Y, d, d, 180, 90); p.AddArc(r.Right - d, r.Y, d, d, 270, 90);
-            p.AddArc(r.Right - d, r.Bottom - d, d, d, 0, 90); p.AddArc(r.X, r.Bottom - d, d, d, 90, 90); p.CloseFigure();
+            Pill p = new Pill(value) { Backdrop = backdrop, OnColor = green, OffColor = dark ? Color.FromArgb(88, 88, 92) : Color.FromArgb(213, 213, 217) };
+            p.SetBounds(440 - 16 - 42, row * 46 + 10, 42, 26);
             return p;
+        }
+        Group MakeGroup(int rows, int top)
+        {
+            return new Group { Left = 40, Top = top, Width = 440, Height = rows * 46, Rows = rows, Surface = surface, Line = line, Backdrop = bg, BackColor = bg };
+        }
+        // one row of a group: a label that also toggles its switch
+        void AddSwitchRow(Group g, string text, Pill p, int row)
+        {
+            Label l = MakeLabel(text, 16, row * 46, 340, 46, 10F, "Segoe UI", ink, ContentAlignment.MiddleLeft);
+            l.Cursor = Cursors.Hand; l.Click += delegate { p.Checked = !p.Checked; };
+            p.AccessibleName = text;
+            g.Controls.Add(l); g.Controls.Add(p);
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+            if (logo == null) return;
+            Graphics g = e.Graphics; g.InterpolationMode = InterpolationMode.HighQualityBicubic; g.SmoothingMode = SmoothingMode.AntiAlias; g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+            float k = ClientSize.Width / 520f, s = 112 * k;
+            g.DrawImage(logo, new RectangleF((ClientSize.Width - s) / 2f, 12 * k, s, s));
         }
 
         void BuildPages()
         {
             // ---- options page (install) / confirm page (uninstall)
-            pageOptions = new Panel { Left = 210, Top = 0, Width = 430, Height = 360, BackColor = bg };
+            pageOptions = new Panel { Left = 0, Top = 128, Width = 520, Height = 286, BackColor = bg };
             if (!o.Uninstall)
             {
-                pageOptions.Controls.Add(MakeLabel("Install Keystone", 40, 36, 360, 34, 18F, FontStyle.Bold, ink));
-                pageOptions.Controls.Add(MakeLabel("Keystone opens your KeePass databases with a calmer, simpler interface. Everything stays on this computer — it makes no network connections.", 40, 78, 360, 62, 9.5F, FontStyle.Regular, ink2));
-                pageOptions.Controls.Add(MakeLabel("Install to", 40, 150, 200, 20, 9F, FontStyle.Bold, ink2));
-                dirBox = new TextBox { Left = 40, Top = 174, Width = 296, Text = o.InstallDir, BackColor = dark ? Color.FromArgb(37, 37, 35) : Color.White, ForeColor = ink, BorderStyle = BorderStyle.FixedSingle };
-                Button browse = MakeButton("Browse…", false); browse.SetBounds(344, 172, 46, 28); browse.Text = "…";
-                browse.Click += delegate
+                pageOptions.Controls.Add(Title("Install Keystone"));
+                pageOptions.Controls.Add(Subtitle("A calm, simple way to open your KeePass databases. Everything stays on this computer, with no network connections.", 56));
+                Group g = MakeGroup(3, 104);
+                g.Controls.Add(MakeLabel("Location", 16, 0, 80, 46, 10F, "Segoe UI", ink, ContentAlignment.MiddleLeft));
+                pathLabel = MakeLabel(Fit(dir), 100, 0, 252, 46, 9.5F, "Segoe UI", ink2, ContentAlignment.MiddleRight);
+                pathLabel.AutoEllipsis = true; pathLabel.TextAlign = ContentAlignment.MiddleRight;
+                Label change = MakeLabel("Change…", 356, 0, 70, 46, 10F, "Segoe UI", accent, ContentAlignment.MiddleRight);
+                change.Cursor = Cursors.Hand;
+                change.Click += delegate
                 {
                     using (FolderBrowserDialog d = new FolderBrowserDialog { Description = "Choose where to install Keystone", ShowNewFolderButton = true })
-                    { if (d.ShowDialog(this) == DialogResult.OK) dirBox.Text = Path.Combine(d.SelectedPath, "Keystone"); }
+                    { if (d.ShowDialog(this) == DialogResult.OK) { dir = Path.Combine(d.SelectedPath, "Keystone"); pathLabel.Text = Fit(dir); } }
                 };
-                pageOptions.Controls.AddRange(new Control[] { dirBox, browse });
-                chkDesktop = MakeCheck("Create a desktop shortcut", 214, o.DesktopShortcut); chkDesktop.Left = 40; chkDesktop.Width = 360;
-                chkAssoc = MakeCheck("Offer “Open with Keystone” for .kdbx files", 240, o.FileAssociation); chkAssoc.Left = 40; chkAssoc.Width = 360;
-                pageOptions.Controls.AddRange(new Control[] { chkDesktop, chkAssoc });
+                g.Controls.AddRange(new Control[] { pathLabel, change });
+                chkDesktop = MakePill(o.DesktopShortcut, surface, 1); AddSwitchRow(g, "Desktop shortcut", chkDesktop, 1);
+                chkAssoc = MakePill(o.FileAssociation, surface, 2); AddSwitchRow(g, "Offer “Open with Keystone” for .kdbx files", chkAssoc, 2);
+                pageOptions.Controls.Add(g);
                 if (!Core.WebView2Present())
                 {
-                    Label warn = MakeLabel("The Microsoft Edge WebView2 Runtime wasn’t found. Keystone needs it; it ships with current Windows 10 and 11.", 40, 276, 270, 56, 8.5F, FontStyle.Regular, Color.FromArgb(180, 110, 0));
-                    LinkLabel get = new LinkLabel { Text = "Get it from Microsoft", Left = 40, Top = 334, Width = 200, Height = 18, LinkColor = accent, BackColor = Color.Transparent, Font = new Font("Segoe UI", 8.5F) };
+                    pageOptions.Controls.Add(MakeLabel("The Microsoft Edge WebView2 Runtime wasn’t found. Keystone needs it; it ships with current Windows 10 and 11.", 40, 246, 440, 30, 8.5F, "Segoe UI", dark ? Color.FromArgb(255, 159, 10) : Color.FromArgb(184, 97, 0), ContentAlignment.TopCenter));
+                    LinkLabel get = new LinkLabel { Text = "Get it from Microsoft", Left = 40, Top = 268, Width = 440, Height = 16, LinkColor = accent, ActiveLinkColor = accent, BackColor = Color.Transparent, Font = new Font("Segoe UI", 8.5F), TextAlign = ContentAlignment.TopCenter };
                     get.Click += delegate { try { Process.Start(new ProcessStartInfo("https://go.microsoft.com/fwlink/p/?LinkId=2124703") { UseShellExecute = true }); } catch (Exception) { } };
-                    pageOptions.Controls.AddRange(new Control[] { warn, get });
+                    pageOptions.Controls.Add(get);
                 }
             }
             else
             {
-                pageOptions.Controls.Add(MakeLabel("Remove Keystone?", 40, 36, 360, 34, 18F, FontStyle.Bold, ink));
-                pageOptions.Controls.Add(MakeLabel("Keystone will be removed from this computer.\n\nYour password databases and key files are never touched — they stay exactly where they are.", 40, 82, 360, 100, 9.5F, FontStyle.Regular, ink2));
-                chkPurge = MakeCheck("Also delete Keystone’s settings (remembered database, preferences)", 200, o.Purge); chkPurge.Left = 40; chkPurge.Width = 360; chkPurge.Height = 44;
-                pageOptions.Controls.Add(chkPurge);
+                pageOptions.Controls.Add(Title("Remove Keystone?"));
+                pageOptions.Controls.Add(Subtitle("Keystone will be removed from this computer. Your databases and key files are never touched.", 56));
+                Group g = MakeGroup(1, 104);
+                chkPurge = MakePill(o.Purge, surface, 0); AddSwitchRow(g, "Also delete Keystone’s settings", chkPurge, 0);
+                pageOptions.Controls.Add(g);
+                pageOptions.Controls.Add(MakeLabel("Settings include the remembered database and your preferences.", 40, 158, 440, 20, 8.5F, "Segoe UI", ink2, ContentAlignment.TopCenter));
             }
             Controls.Add(pageOptions);
 
             // ---- progress page
-            pageProgress = new Panel { Left = 210, Top = 0, Width = 430, Height = 360, BackColor = bg, Visible = false };
-            pageProgress.Controls.Add(MakeLabel(o.Uninstall ? "Removing Keystone…" : "Installing Keystone…", 40, 36, 360, 34, 18F, FontStyle.Bold, ink));
-            bar = new ProgressBar { Left = 40, Top = 130, Width = 350, Height = 10, Style = ProgressBarStyle.Continuous };
-            stepLabel = MakeLabel("", 40, 150, 350, 22, 9.5F, FontStyle.Regular, ink2);
+            pageProgress = new Panel { Left = 0, Top = 128, Width = 520, Height = 286, BackColor = bg, Visible = false };
+            pageProgress.Controls.Add(Title(o.Uninstall ? "Removing Keystone…" : "Installing Keystone…"));
+            bar = new SlimBar { Left = 80, Top = 112, Width = 360, Height = 6, Track = dark ? Color.FromArgb(68, 68, 72) : Color.FromArgb(222, 222, 226), Fill = accent, Backdrop = bg };
+            stepLabel = MakeLabel("", 40, 130, 440, 22, 9.5F, "Segoe UI", ink2, ContentAlignment.TopCenter);
             pageProgress.Controls.AddRange(new Control[] { bar, stepLabel });
             Controls.Add(pageProgress);
 
             // ---- finish page
-            pageFinish = new Panel { Left = 210, Top = 0, Width = 430, Height = 360, BackColor = bg, Visible = false };
-            finishTitle = MakeLabel("", 40, 36, 370, 34, 18F, FontStyle.Bold, ink);
-            finishText = MakeLabel("", 40, 82, 360, 120, 9.5F, FontStyle.Regular, ink2);
-            chkLaunch = MakeCheck("Start Keystone now", 220, o.Launch); chkLaunch.Left = 40;
-            pageFinish.Controls.AddRange(new Control[] { finishTitle, finishText, chkLaunch });
+            pageFinish = new Panel { Left = 0, Top = 128, Width = 520, Height = 286, BackColor = bg, Visible = false };
+            finishTitle = Title("");
+            finishText = MakeLabel("", 50, 44, 420, 84, 10F, "Segoe UI", ink2, ContentAlignment.TopCenter);
+            grpLaunch = MakeGroup(1, 140);
+            chkLaunch = MakePill(o.Launch, surface, 0); AddSwitchRow(grpLaunch, "Start Keystone now", chkLaunch, 0);
+            pageFinish.Controls.AddRange(new Control[] { finishTitle, finishText, grpLaunch });
             Controls.Add(pageFinish);
+        }
+
+        // shorten a long path from the left so it stays on one line
+        string Fit(string s)
+        {
+            Font f = new Font("Segoe UI", 9.5F);
+            while (s.Length > 12 && TextRenderer.MeasureText(s, f).Width > 244) { int i = s.IndexOf(Path.DirectorySeparatorChar, s.StartsWith("\u2026") ? 2 : 0); if (i < 0) break; s = "\u2026" + s.Substring(i); }
+            return s;
         }
 
         void Show(Panel p) { pageOptions.Visible = pageProgress.Visible = pageFinish.Visible = false; p.Visible = true; }
 
         void OnPrimary()
         {
-            if (btnPrimary.Text == "Finish" || btnPrimary.Text == "Close")
+            if (btnPrimary.Text == "Done" || btnPrimary.Text == "Close")
             {
                 if (ok && !o.Uninstall && chkLaunch.Checked) LaunchApp();
                 Close(); return;
             }
             if (!o.Uninstall)
             {
-                string dir = dirBox.Text.Trim();
-                if (dir.Length == 0 || !Path.IsPathRooted(dir)) { MessageBox.Show(this, "Please choose a full folder path to install into.", "Keystone Setup", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
-                o.InstallDir = dir; o.DesktopShortcut = chkDesktop.Checked; o.FileAssociation = chkAssoc.Checked;
+                string d = dir.Trim();
+                if (d.Length == 0 || !Path.IsPathRooted(d)) { MessageBox.Show(this, "Please choose a full folder path to install into.", "Keystone Setup", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
+                o.InstallDir = d; o.DesktopShortcut = chkDesktop.Checked; o.FileAssociation = chkAssoc.Checked;
             }
             else o.Purge = chkPurge.Checked;
             Run();
@@ -450,13 +607,13 @@ namespace KeystoneSetup
         void Run()
         {
             Show(pageProgress); working = true; btnPrimary.Enabled = false; btnCancel.Enabled = false;
-            Action<int, string> report = delegate (int pct, string msg) { BeginInvoke(new Action(delegate { bar.Value = Math.Max(0, Math.Min(100, pct)); stepLabel.Text = msg; })); };
+            Action<int, string> report = delegate (int pct, string msg) { BeginInvoke(new Action(delegate { bar.Value = pct; stepLabel.Text = msg; })); };
             Thread t = new Thread(delegate ()
             {
                 string error = null;
                 try { if (o.Uninstall) Core.Uninstall(o, report); else Core.Install(o, report); }
                 catch (Exception ex) { error = ex.Message; Log.Write("FAILED: " + ex); }
-                Thread.Sleep(350);
+                Thread.Sleep(450);
                 BeginInvoke(new Action(delegate { Finished(error); }));
             });
             t.SetApartmentState(ApartmentState.STA); t.IsBackground = true; t.Start();
@@ -469,15 +626,17 @@ namespace KeystoneSetup
             if (ok)
             {
                 finishTitle.Text = o.Uninstall ? "Keystone was removed" : "Keystone is ready";
+                finishText.ForeColor = ink2;
                 finishText.Text = o.Uninstall ? "Thanks for trying it. Your databases were not touched."
                     : "Find Keystone in the Start menu" + (o.DesktopShortcut ? " or on your desktop" : "") + ".\n\nPlug in your USB drive and Keystone will find your database on its own.";
-                chkLaunch.Visible = !o.Uninstall; btnPrimary.Text = "Finish";
+                grpLaunch.Visible = !o.Uninstall; btnPrimary.Text = "Done"; StylePrimary(btnPrimary, accent);
             }
             else
             {
                 finishTitle.Text = o.Uninstall ? "Couldn’t finish removing" : "Setup couldn’t finish";
+                finishText.Height = 130; finishText.ForeColor = red;
                 finishText.Text = error + "\n\nNothing else was changed. A log is at " + Path.Combine(Path.GetTempPath(), "Keystone-Setup.log");
-                chkLaunch.Visible = false; btnPrimary.Text = "Close"; btnPrimary.BackColor = bg; btnPrimary.ForeColor = ink;
+                grpLaunch.Visible = false; btnPrimary.Text = "Close"; StyleSecondary(btnPrimary);
             }
         }
 
