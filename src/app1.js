@@ -138,7 +138,7 @@ function toast(msg, o = {}) {
   const t = h('div', { class: 'toast' + (o.error ? ' err' : '') }, ic(o.error ? 'alert' : (o.icon || 'check')), h('span', null, msg),
     o.action ? h('button', { onclick: () => { t.remove(); o.action.fn(); } }, o.action.label) : null);
   box.append(t);
-  setTimeout(() => t.remove(), o.ms || (o.error ? 7000 : 3200));
+  setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 180); }, o.ms || (o.error ? 7000 : 3200));   // leaves the way it arrived
   while (box.children.length > 3) box.firstChild.remove();
 }
 function busy(message) {
@@ -176,7 +176,8 @@ function openModal({ title, body, actions = [], wide = false, onClose, dismissab
   let primary = null;
   const api = { dismissable };
   const close = (result) => {
-    scrim.remove();
+    scrim.classList.add('out'); scrim.style.pointerEvents = 'none';                 // fade/settle out, then remove
+    setTimeout(() => scrim.remove(), 170);
     S.modals = S.modals.filter((m) => m !== api);
     if (prev && prev.isConnected && prev.focus) prev.focus();
     if (onClose) onClose(result);

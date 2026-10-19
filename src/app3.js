@@ -281,14 +281,16 @@ function renderDetail(keepScroll) {
   const d = $('#detail'); if (!d) return;
   const top = keepScroll ? d.scrollTop : 0;
   d.replaceChildren();
-  if (S.editing) { d.append(editForm()); d.scrollTop = top; return; }
+  if (S.editing) { const form = editForm(); if (!keepScroll) form.classList.add('enter'); d.append(form); d.scrollTop = top; return; }
   const e = S.selectedId && S.vault.entries.get(S.selectedId);
   if (!e) {
     d.append(h('div', { class: 'emptydetail' }, h('div', { class: 'empty' }, ic('shield'), h('b', null, 'Select an item'), h('p', null, 'Pick something from the list to see its details, or add a new entry.'),
       h('div', { class: 'hints' }, h('span', null, 'New entry ', h('span', { class: 'kbd' }, kbdLabel(SC.newEntry))), h('span', null, 'Search ', h('span', { class: 'kbd' }, kbdLabel(SC.find))), h('span', null, 'Copy password ', h('span', { class: 'kbd' }, kbdLabel(SC.copyPass))), h('span', null, 'Copy username ', h('span', { class: 'kbd' }, kbdLabel(SC.copyUser)))))));
     return;
   }
-  d.append(entryView(e));
+  const view = entryView(e);
+  if (!keepScroll) view.classList.add('enter');                // only when the selection changes, not on every refresh
+  d.append(view);
   d.scrollTop = top;
 }
 
