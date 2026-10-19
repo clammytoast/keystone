@@ -10,6 +10,7 @@ Keystone gives your KeePass database a calmer, friendlier interface. It reads an
 
 ## Highlights
 
+- **Feels like a Mac app.** A macOS-style design: source-list sidebar, grouped forms, Apple's system colours, the Inter typeface, a squircle app icon, and quiet, purposeful animations that respect your system's reduced-motion setting. The installer matches.
 - **Works with KeePass.** Opens and saves KeePass 2 databases (KDBX 3 and 4), with a password, a key file (`.keyx` / `.key`), or both. Nothing to import or convert: you open your `.kdbx` where it is.
 - **New here? Create a database in a minute.** Pick a name and a place, choose a password and/or a key file, and Keystone makes a modern KeePass database (Argon2id, AES-256) with starter groups and a short welcome note.
 - **USB-drive friendly.** Keep `Database.kdbx` and `Database.keyx` on a USB stick and install Keystone on every computer you use. Plug the stick in and Keystone finds the database and key file on its own, even when Windows gives the stick a different drive letter.
@@ -19,7 +20,7 @@ Keystone gives your KeePass database a calmer, friendlier interface. It reads an
 - **Private by design.** The app makes no network connections at all (see [SECURITY.md](SECURITY.md)).
 
 <p>
-  <img src="docs/screenshots/3-welcome.png" width="49%" alt="A new database with its welcome entry">
+  <img src="docs/screenshots/3-vault.png" width="49%" alt="An open vault in the dark theme">
   <img src="docs/screenshots/4-light.png" width="49%" alt="The light theme">
 </p>
 
@@ -33,7 +34,11 @@ Keystone gives your KeePass database a calmer, friendlier interface. It reads an
    ```
 
    The result must match the SHA-256 listed in the release notes.
-3. Run it and press **Install**. No administrator rights are needed; it installs for your user.
+3. Run it, choose whether to add a desktop shortcut and the "Open with Keystone" option for `.kdbx` files, and press **Install**. No administrator rights are needed; it installs for your user. The installer follows your light or dark theme.
+
+<p align="center"><img src="docs/screenshots/5-installer.png" width="360" alt="The Keystone installer"></p>
+
+For scripted installs: `Keystone-Setup-1.0.0.exe /S` installs silently (add `/nodesktop`, `/noassoc`, or `/D=C:\Where\To\Install`, which must come last).
 
 **Windows may warn you.** The installer is not code-signed yet, so SmartScreen can show "Windows protected your PC" (choose *More info → Run anyway*), and on PCs with Smart App Control turned on it may be blocked. Signing needs a paid certificate; see [Code signing](docs/releasing.md#code-signing).
 
@@ -90,11 +95,11 @@ powershell -ExecutionPolicy Bypass -File windows\build-windows.ps1
 powershell -ExecutionPolicy Bypass -File windows\installer\build-installer.ps1
 ```
 
-The first script bundles the interface (`src/`) into `build\Keystone.html`, then embeds it, together with Microsoft's WebView2 helper libraries from `windows\lib`, into the native host `windows\Program.cs`. The second embeds `Keystone.exe` into the installer `windows\installer\Setup.cs`.
+The first script bundles the interface (`src/`) into `build\Keystone.html`, then embeds it, together with Microsoft's WebView2 helper libraries from `windows\lib`, into the native host `windows\Program.cs`. The second generates the app icon (`windows\make-icon.ps1`) and embeds it, together with `Keystone.exe`, into the installer `windows\installer\Setup.cs`.
 
 | Folder | What is in it |
 |---|---|
-| `src/` | The interface: KDBX reader/writer (`kdbx.js`), key derivation worker (`worker.js`), vault model (`vault.js`), screens (`app*.js`, `create.js`), styles |
+| `src/` | The interface: KDBX reader/writer (`kdbx.js`), key derivation worker (`worker.js`), vault model (`vault.js`), screens (`app*.js`, `create.js`), styles, and the bundled Inter font (`fonts/`, SIL OFL) |
 | `windows/` | The Windows host (window, file dialogs, clipboard, USB detection), the installer, the icon generator, WebView2 libraries |
 | `tests/` | Compatibility tests against the real KeePass library |
 | `docs/` | Architecture notes, the host bridge, release steps, screenshots |
