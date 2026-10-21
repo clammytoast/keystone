@@ -10,7 +10,6 @@ Keystone gives your KeePass database a calmer, friendlier interface. It reads an
 
 ## Highlights
 
-- **Feels like a Mac app.** A macOS-style design: source-list sidebar, grouped forms, Apple's system colours, the Inter typeface, a squircle app icon, and quiet, purposeful animations that respect your system's reduced-motion setting. The installer matches.
 - **Works with KeePass.** Opens and saves KeePass 2 databases (KDBX 3 and 4), with a password, a key file (`.keyx` / `.key`), or both. Nothing to import or convert: you open your `.kdbx` where it is.
 - **New here? Create a database in a minute.** Pick a name and a place, choose a password and/or a key file, and Keystone makes a modern KeePass database (Argon2id, AES-256) with starter groups and a short welcome note.
 - **USB-drive friendly.** Keep `Database.kdbx` and `Database.keyx` on a USB stick and install Keystone on every computer you use. Plug the stick in and Keystone finds the database and key file on its own, even when Windows gives the stick a different drive letter.
